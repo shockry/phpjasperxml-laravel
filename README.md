@@ -74,11 +74,15 @@ class ReportController extends BaseController {
 
 ```
 So now we have the controller including the necessary files to display the report, asking for its name to give it its parameters and displaying it on the browser.
-   3. Add the route to your routes.php file.
+
+3- Add the route to your routes.php file.
+
 ```
 Route::controller('reports', 'ReportController');
 ```
-   4. Now type the URL to display the report sending it the parameter as a GET
+
+4- Now type the URL to display the report sending it the parameter as a GET
+
 ```
 http://serverurl/reports/viewreport/testreport?param1=test
 ```
