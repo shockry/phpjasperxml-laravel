@@ -1,6 +1,7 @@
 <?php
 //version 0.8
 class PHPJasperXMLSubReport{
+    public static $params = '';
     private $adjust=1.2;
     public $version=0.8;
     private $pdflib;
@@ -110,12 +111,35 @@ class PHPJasperXMLSubReport{
         }
     }
 
+    public function load_xml_string($jrxml){
+        $keyword="<queryString>
+		<![CDATA[";
+        $jrxml=  str_replace($keyword, "<queryString><![CDATA[", $jrxml);
+            $xml =  simplexml_load_string($jrxml);
+            $this->xml_dismantle($xml);
+    }
+    
+    public function load_xml_file($file){
+       // var_dump($this->arrayParameter);
+       // echo "file has come, yaay ----  ";
+            $xml=  file_get_contents($file);
+            $this->load_xml_string($xml);            
+    }
+    
     public function xml_dismantle($xml) {
+       
+            
         $this->page_setting($xml);
+       
         foreach ($xml as $k=>$out) {
+            
             switch($k) {
                 case "parameter":
+//                    echo var_dump($this->arrayParameter);
+//                exit;
                     $this->parameter_handler($out);
+                   // echo print_r($this->arrayParameter);
+                   
                     break;
                 case "queryString":
                     $this->queryString_handler($out);
@@ -181,16 +205,20 @@ class PHPJasperXMLSubReport{
     }
 
     public function parameter_handler($xml_path) {
-            $defaultValueExpression=str_replace('"','',$xml_path->defaultValueExpression);
-       if($defaultValueExpression!='')
-        $this->arrayParameter[$xml_path["name"].'']=$defaultValueExpression;
-       else
+       // echo var_dump($this->arrayParameter);
+//            $defaultValueExpression=str_replace('"','',$xml_path->defaultValueExpression);
+//            
+//       if($defaultValueExpression =='')
+//        $this->arrayParameter[$xml_path["name"].'']=$defaultValueExpression;
+//       else
         $this->arrayParameter[$xml_path["name"].''];        
     }
 
     public function queryString_handler($xml_path) {
+         
         $this->sql =$xml_path;
-        if(isset($this->arrayParameter)) {
+        
+        if(isset($this->arrayParameter )) {
             foreach($this->arrayParameter as  $v => $a) {
                 $this->sql = str_replace('$P{'.$v.'}', $a, $this->sql);
             }
@@ -198,6 +226,7 @@ class PHPJasperXMLSubReport{
     }
 
     public function field_handler($xml_path) {
+       
         $this->arrayfield[]=$xml_path["name"];
     }
 
@@ -208,9 +237,9 @@ class PHPJasperXMLSubReport{
     }
 
     public function group_handler($xml_path) {
-
+                
 //        $this->arraygroup=$xml_path;
-
+//$this->arraygroup=$xml_path;
 
         if($xml_path["isStartNewPage"]=="true")
             $this->newPageGroup=true;
@@ -417,7 +446,8 @@ class PHPJasperXMLSubReport{
         $fill=0;
         $border=0;
         $fontsize=10;
-        $font="helvetica";
+       // $font="helvetica";
+        $font="aealarabiya";
         $fontstyle="";
         $textcolor = array("r"=>0,"g"=>0,"b"=>0);
         $fillcolor = array("r"=>255,"g"=>255,"b"=>255);
@@ -540,8 +570,8 @@ $data->hyperlinkReferenceExpression=" ".$this->analyse_expression($data->hyperli
         $align="L";
         $fill=0;
         $border=0;
-        $fontsize=10;
-        $font="helvetica";
+        $fontsize=14;
+        $font="aealarabiya";
         $rotation="";
         $fontstyle="";
         $textcolor = array("r"=>0,"g"=>0,"b"=>0);
@@ -604,8 +634,9 @@ $data->hyperlinkReferenceExpression=" ".$this->analyse_expression($data->hyperli
          //$data->hyperlinkReferenceExpression=$this->analyse_expression($data->hyperlinkReferenceExpression);
         //if( $data->hyperlinkReferenceExpression!=''){echo "$data->hyperlinkReferenceExpression";die;}
 
-
+      
         switch ($data->textFieldExpression) {
+            
             case 'new java.util.Date()':
 //### New: =>date("Y.m.d.",....
                 $this->pointer[]=array ("type"=>"MultiCell","width"=>$data->reportElement["width"],"height"=>$height,"txt"=>date("Y.m.d.", time()),"border"=>$border,"align"=>$align,"fill"=>$fill,"hidden_type"=>"date","soverflow"=>$stretchoverflow,"poverflow"=>$printoverflow,"link"=>substr($data->hyperlinkReferenceExpression,1,-1));
@@ -636,6 +667,7 @@ $data->hyperlinkReferenceExpression=" ".$this->analyse_expression($data->hyperli
                 $this->pointer[]=array("type"=>"MultiCell","width"=>$data->reportElement["width"],"height"=>$height,"txt"=>&$this->group_count["$this->gnam"],"border"=>$border,"align"=>$align,"fill"=>$fill,"hidden_type"=>"group_count","soverflow"=>$stretchoverflow,"poverflow"=>$printoverflow,"link"=>substr($data->hyperlinkReferenceExpression,1,-1),"pattern"=>$data["pattern"]);
                 break;
             default:
+//               echo $data->textFieldExpression;
                 $writeHTML=false;
                 if($data->reportElement->property["name"]=="writeHTML")
                     $writeHTML=$data->reportElement->property["value"];
@@ -678,15 +710,16 @@ $data->hyperlinkReferenceExpression=" ".$this->analyse_expression($data->hyperli
     }
 
     public function transferDBtoArray($host,$user,$password,$db_or_dsn_name,$cndriver="mysql") {
+        
         $this->m=0;
-
-        if(!$this->connect($host,$user,$password,$db_or_dsn_name,$cndriver))	//connect database
+        
+        if(!DB::connection()->getDatabaseName())	//connect database
         {
-            echo "Fail to connect database";
+            echo "Fail to connect database..";
             exit(0);
-        }
+        } 
         if($this->debugsql==true) {
-            echo $this->sql;
+            $this->sql;
             die;
         }
 
@@ -712,14 +745,24 @@ $data->hyperlinkReferenceExpression=" ".$this->analyse_expression($data->hyperli
             }
         }
         else {
-            $result = @mysql_query($this->sql); //query from db
-
-            while ($row = mysql_fetch_array($result, MYSQL_ASSOC)) {
+           //echo $this->sql;
+//            $result = @mysql_query($this->sql); //query from db
+//
+//            while ($row = mysql_fetch_array($result, MYSQL_ASSOC)) {
+            
+//        echo $this->sql ."<br>";
+//        return;
+        //exit;
+            $rows = DB::select(DB::raw($this->sql));//mysql_fetch_array($result, MYSQL_ASSOC)) {
+           
+            //echo print_r(DB::select(DB::raw($this->sql)));
+            foreach ($rows as $row){
                 foreach($this->arrayfield as $out) {
-                    $this->arraysqltable[$this->m]["$out"]=$row["$out"];
+                    $this->arraysqltable[$this->m]["$out"]=$row->$out;
                 }
                 $this->m++;
             }
+            return $this->arraysqltable;
         }
 
        	//close connection to db
@@ -1018,6 +1061,7 @@ $data->hyperlinkReferenceExpression=" ".$this->analyse_expression($data->hyperli
                     break;
                 case "detail":
                     if(!$this->newPageGroup) {
+                        
                         $this->detail();
                     }else {
                         $this->detailNewPage();
@@ -2585,6 +2629,7 @@ foreach($this->arrayVariable as $name=>$value){
     }
 
     public function detail() {
+        
         $this->arraydetail[0]["y_axis"]=$this->arraydetail[0]["y_axis"]- $this->titleheight+$this->TopHeightFromMainPage;
         //echo $this->arraydetail[0]["y_axis"]."- $this->titleheight+$this->TopHeightFromMainPage;<br/>";
         $field_pos_y=$this->arraydetail[0]["y_axis"];
@@ -2595,9 +2640,9 @@ foreach($this->arrayVariable as $name=>$value){
         $this->showGroupHeader($this->arrayPageSetting["topMargin"]+$this->arraypageHeader[0]["height"]+$this->TopHeightFromMainPage);
         $rownum=0;
         if($this->arraysqltable) {
-
+            
             foreach($this->arraysqltable as $row) {
-
+               // echo print_r($row) . "</br>";
                 if(isset($this->arrayVariable))	//if self define variable existing, go to do the calculation
                 {
                     $this->variable_calculation($rownum, $this->arraysqltable[$this->global_pointer][$this->group_pointer]);
@@ -2641,7 +2686,8 @@ foreach($this->arrayVariable as $name=>$value){
                     switch($compare["hidden_type"]) {
                         case "field":
                             $txt=$this->analyse_expression($compare["txt"]);
-
+                             
+                            
                             if(isset($this->arraygroup[$this->group_name]["groupFooter"])&&(($checkpoint+($compare["height"]*$txt))>($this->arrayPageSetting["subreportpageHeight"]-$this->arraygroupfootheight-$this->arrayPageSetting["bottomMargin"]-$this->BottomHeightFromMainPage)))//check group footer existed or not
                             {      
                                 $this->pageFooter($checkpoint);
@@ -2712,9 +2758,10 @@ foreach($this->arrayVariable as $name=>$value){
 
                 foreach ($this->arraydetail as $out) {
                     switch ($out["hidden_type"]) {
-                        case "field":
-
+                        case "field": 
+                           
                             $this->prepare_print_array=array("type"=>"MultiCell","width"=>$out["width"],"height"=>$out["height"],"txt"=>$out["txt"],"border"=>$out["border"],"align"=>$out["align"],"fill"=>$out["fill"],"hidden_type"=>$out["hidden_type"],"printWhenExpression"=>$out["printWhenExpression"],"soverflow"=>$out["soverflow"],"poverflow"=>$out["poverflow"],"link"=>$out["link"],"pattern"=>$out["pattern"],"writeHTML"=>$out["writeHTML"],"isPrintRepeatedValues"=>$out["isPrintRepeatedValues"]);
+                             
                             $this->display($this->prepare_print_array,0,true);
 
                             if($this->pdf->GetY()>$biggestY) {
@@ -2764,7 +2811,8 @@ foreach($this->arrayVariable as $name=>$value){
 //### End of modifications
 				
                 $this->global_pointer++;
-                   $rownum++;			   
+                   $rownum++;
+                   
 				   
             }
 //  $ghfoot= $this->showGroupFooter($compare["height"]+$this->pdf->getY());
@@ -2827,6 +2875,7 @@ foreach($this->arrayVariable as $name=>$value){
                 {$this->currentrow=$this->arraysqltable[$this->global_pointer];
                     switch($compare["hidden_type"]) {
                         case "field":
+                            
                             $txt=$this->analyse_expression($row["$compare[txt]"]);
                             //check group footer existed or not
 
@@ -2909,9 +2958,10 @@ foreach($this->arrayVariable as $name=>$value){
 
                 foreach ($this->arraydetail as $out) {
                   $this->currentrow=$this->arraysqltable[$this->global_pointer];
+                  
                     switch ($out["hidden_type"]) {
                         case "field":
-
+                                
                             $this->prepare_print_array=array("type"=>"MultiCell","width"=>$out["width"],"height"=>$out["height"],"txt"=>$out["txt"],"border"=>$out["border"],"align"=>$out["align"],"fill"=>$out["fill"],"hidden_type"=>$out["hidden_type"],"printWhenExpression"=>$out["printWhenExpression"],"soverflow"=>$out["soverflow"],"poverflow"=>$out["poverflow"],"link"=>$out["link"],"pattern"=>$out["pattern"]);
                             $this->display($this->prepare_print_array,0,true);
 
@@ -2990,7 +3040,7 @@ if(isset($this->arraygroup)&&($this->global_pointer>0)&&($this->arraysqltable[$t
 
 
     public function display($arraydata,$y_axis=0,$fielddata=false) {
-  //print_r($arraydata);echo "<br/>";
+//  print_r($arraydata);echo "<br/>";
     //    $this->pdf->Cell(10,10,"SSSS");
     
             
@@ -3059,6 +3109,7 @@ if(isset($this->arraygroup)&&($this->global_pointer>0)&&($this->arraysqltable[$t
             $this->pdf->SetXY($arraydata["x"]+$this->arrayPageSetting["leftMargin"],$arraydata["y"]+$y_axis);
         }
         elseif($arraydata["type"]=="Cell") {
+            
            $currenty=$this->pdf->GetY();
            if(($this->allowprintuntill>=$currenty))                
             $this->pdf->Cell($arraydata["width"],$arraydata["height"],$this->updatePageNo($arraydata["txt"]),$arraydata["border"],$arraydata["ln"],$arraydata["align"],$arraydata["fill"],$arraydata["link"]);
