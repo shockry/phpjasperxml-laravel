@@ -33,8 +33,11 @@ project
 here's what you'll need to do then
 
 
-    1. Design your report in ireport designer and place the .jrxml file (and the subreports and images it contains, if any) in your app/includes/reports directory, lets say you gave it the name "testreport.jrxml".
-    2. Create a new controller (I choose to name it "ReportController"), That's what will be inside
+1- Design your report in ireport designer,
+    and place the .jrxml file (and the subreports and images it contains, if any) in your app/includes/reports directory, lets say you gave it the name "testreport.jrxml".
+    
+    
+2- Create a new controller (I choose to name it "ReportController"), That's what will be inside
 ```
 <?php
 include_once(app_path().'/includes/class/tcpdf/tcpdf.php');
